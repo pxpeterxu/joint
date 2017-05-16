@@ -45,7 +45,7 @@ var joint = {
 
         opt = opt || {};
 
-        _.invoke(joint.mvc.views, 'setTheme', theme, opt);
+        _.invokeMap(joint.mvc.views, 'setTheme', theme, opt);
 
         // Update the default theme on the view prototype.
         joint.mvc.View.prototype.defaultTheme = theme;
@@ -1392,7 +1392,7 @@ var joint = {
                 return function() {
 
                     var args = Array.prototype.slice.call(arguments);
-                    var cells = args.length > 0 && _.first(args) || [];
+                    var cells = args.length > 0 && _.head(args) || [];
                     var opt = args.length > 1 && _.last(args) || {};
 
                     if (!_.isArray(cells)) {

@@ -1,4 +1,4 @@
-/*! JointJS v1.1.0 (2017-03-31) - JavaScript diagramming library
+/*! JointJS v1.1.0 (2017-05-15) - JavaScript diagramming library
 
 
 This Source Code Form is subject to the terms of the Mozilla Public
@@ -3105,7 +3105,7 @@ var joint = {
 
         opt = opt || {};
 
-        _.invoke(joint.mvc.views, 'setTheme', theme, opt);
+        _.invokeMap(joint.mvc.views, 'setTheme', theme, opt);
 
         // Update the default theme on the view prototype.
         joint.mvc.View.prototype.defaultTheme = theme;
@@ -4452,7 +4452,7 @@ var joint = {
                 return function() {
 
                     var args = Array.prototype.slice.call(arguments);
-                    var cells = args.length > 0 && _.first(args) || [];
+                    var cells = args.length > 0 && _.head(args) || [];
                     var opt = args.length > 1 && _.last(args) || {};
 
                     if (!_.isArray(cells)) {
@@ -4830,7 +4830,7 @@ joint.dia.Graph = Backbone.Model.extend({
         this._nodes = {};
         this._edges = {};
 
-        _.each(cells, this._restructureOnAdd, this);
+        _.each(cells, _.bind(this._restructureOnAdd, this));
     },
 
     _restructureOnChangeSource: function(link) {
@@ -5003,10 +5003,10 @@ joint.dia.Graph = Backbone.Model.extend({
             opt.position = cells.length;
 
             this.startBatch('add');
-            _.each(cells, function(cell) {
+            _.each(cells, _.bind(function(cell) {
                 opt.position--;
                 this.addCell(cell, opt);
-            }, this);
+            }, this));
             this.stopBatch('add');
         }
 
@@ -5029,7 +5029,7 @@ joint.dia.Graph = Backbone.Model.extend({
         if (cells.length) {
 
             this.startBatch('remove');
-            _.invoke(cells, 'remove', opt);
+            _.invokeMap(cells, 'remove', opt);
             this.stopBatch('remove');
         }
 
@@ -5078,12 +5078,18 @@ joint.dia.Graph = Backbone.Model.extend({
 
     getElements: function() {
 
-        return _.map(this._nodes, function(exists, node) { return this.getCell(node); }, this);
+        return _.map(
+            this._nodes,
+            _.bind(function(exists, node) { return this.getCell(node); }, this)
+        );
     },
 
     getLinks: function() {
 
-        return _.map(this._edges, function(exists, edge) { return this.getCell(edge); }, this);
+        return _.map(
+            this._edges,
+            _.bind(function(exists, edge) { return this.getCell(edge); }, this)
+        );
     },
 
     getFirstCell: function() {
@@ -5114,22 +5120,22 @@ joint.dia.Graph = Backbone.Model.extend({
         var edges = {};
 
         if (outbound) {
-            _.each(this.getOutboundEdges(model.id), function(exists, edge) {
+            _.each(this.getOutboundEdges(model.id), _.bind(function(exists, edge) {
                 if (!edges[edge]) {
                     links.push(this.getCell(edge));
                     edges[edge] = true;
                 }
-            }, this);
+            }, this));
         }
         if (inbound) {
-            _.each(this.getInboundEdges(model.id), function(exists, edge) {
+            _.each(this.getInboundEdges(model.id), _.bind(function(exists, edge) {
                 // Skip links that were already added. Those must be self-loop links
                 // because they are both inbound and outbond edges of the same element.
                 if (!edges[edge]) {
                     links.push(this.getCell(edge));
                     edges[edge] = true;
                 }
-            }, this);
+            }, this));
         }
 
         // If 'deep' option is 'true', return all the links that are connected to any of the descendent cells
@@ -5145,25 +5151,25 @@ joint.dia.Graph = Backbone.Model.extend({
                     embeddedEdges[cell.id] = true;
                 }
             });
-            _.each(embeddedCells, function(cell) {
+            _.each(embeddedCells, _.bind(function(cell) {
                 if (cell.isLink()) return;
                 if (outbound) {
-                    _.each(this.getOutboundEdges(cell.id), function(exists, edge) {
+                    _.each(this.getOutboundEdges(cell.id), _.bind(function(exists, edge) {
                         if (!edges[edge] && !embeddedEdges[edge]) {
                             links.push(this.getCell(edge));
                             edges[edge] = true;
                         }
-                    }, this);
+                    }, this));
                 }
                 if (inbound) {
-                    _.each(this.getInboundEdges(cell.id), function(exists, edge) {
+                    _.each(this.getInboundEdges(cell.id), _.bind(function(exists, edge) {
                         if (!edges[edge] && !embeddedEdges[edge]) {
                             links.push(this.getCell(edge));
                             edges[edge] = true;
                         }
-                    }, this);
+                    }, this));
                 }
-            }, this);
+            }, this));
         }
 
         return links;
@@ -5205,14 +5211,14 @@ joint.dia.Graph = Backbone.Model.extend({
                 }
             }
 
-        }, {}, this);
+        }, _.bind({}, this));
 
         return _.values(neighbors);
     },
 
     getCommonAncestor: function(/* cells */) {
 
-        var cellsAncestors = _.map(arguments, function(cell) {
+        var cellsAncestors = _.map(arguments, _.bind(function(cell) {
 
             var ancestors = [];
             var parentId = cell.get('parent');
@@ -5225,14 +5231,14 @@ joint.dia.Graph = Backbone.Model.extend({
 
             return ancestors;
 
-        }, this);
+        }, this));
 
         cellsAncestors = _.sortBy(cellsAncestors, 'length');
 
         var commonAncestor = _.find(cellsAncestors.shift(), function(ancestor) {
 
             return _.every(cellsAncestors, function(cellAncestors) {
-                return _.contains(cellAncestors, ancestor);
+                return _.includes(cellAncestors, ancestor);
             });
         });
 
@@ -5266,7 +5272,7 @@ joint.dia.Graph = Backbone.Model.extend({
     // the source and target of the link `L2` is changed to point to `A2` and `B2`.
     cloneCells: function(cells) {
 
-        cells = _.unique(cells);
+        cells = _.uniq(cells);
 
         // A map of the form [original cell ID] -> [clone] helping
         // us to reconstruct references for source/target and parent/embeds.
@@ -5371,7 +5377,7 @@ joint.dia.Graph = Backbone.Model.extend({
             }
         });
 
-        _.each(links, function(link) {
+        _.each(links, _.bind(function(link) {
             // For links, return their source & target (if they are elements - not points).
             var source = link.get('source');
             var target = link.get('target');
@@ -5387,9 +5393,9 @@ joint.dia.Graph = Backbone.Model.extend({
                 cellMap[targetElement.id] = targetElement;
                 elements.push(targetElement);
             }
-        }, this);
+        }, this));
 
-        _.each(elements, function(element) {
+        _.each(elements, _.bind(function(element) {
             // For elements, include their connected links if their source/target is in the subgraph;
             var links = this.getConnectedLinks(element, opt);
             _.each(links, function(link) {
@@ -5400,7 +5406,7 @@ joint.dia.Graph = Backbone.Model.extend({
                     cellMap[link.id] = link;
                 }
             });
-        }, this);
+        }, this));
 
         return subgraph;
     },
@@ -5482,22 +5488,22 @@ joint.dia.Graph = Backbone.Model.extend({
         if (iteratee(element, distance) === false) return;
         visited[element.id] = true;
 
-        _.each(this.getNeighbors(element, opt), function(neighbor) {
+        _.each(this.getNeighbors(element, opt), _.bind(function(neighbor) {
             if (!visited[neighbor.id]) {
                 this.dfs(neighbor, iteratee, opt, visited, distance + 1);
             }
-        }, this);
+        }, this));
     },
 
     // Get all the roots of the graph. Time complexity: O(|V|).
     getSources: function() {
 
         var sources = [];
-        _.each(this._nodes, function(exists, node) {
+        _.each(this._nodes, _.bind(function(exists, node) {
             if (!this._in[node] || _.isEmpty(this._in[node])) {
                 sources.push(this.getCell(node));
             }
-        }, this);
+        }, this));
         return sources;
     },
 
@@ -5505,11 +5511,11 @@ joint.dia.Graph = Backbone.Model.extend({
     getSinks: function() {
 
         var sinks = [];
-        _.each(this._nodes, function(exists, node) {
+        _.each(this._nodes, _.bind(function(exists, node) {
             if (!this._out[node] || _.isEmpty(this._out[node])) {
                 sinks.push(this.getCell(node));
             }
-        }, this);
+        }, this));
         return sinks;
     },
 
@@ -5601,7 +5607,7 @@ joint.dia.Graph = Backbone.Model.extend({
     // Remove links connected to the cell `model` completely.
     removeLinks: function(model, options) {
 
-        _.invoke(this.getConnectedLinks(model), 'remove', options);
+        _.invokeMap(this.getConnectedLinks(model), 'remove', options);
     },
 
     // Find all elements at given point
@@ -5669,7 +5675,7 @@ joint.dia.Graph = Backbone.Model.extend({
             return cell.isEmbedded();
         });
 
-        _.invoke(cells, 'translate', dx, dy, opt);
+        _.invokeMap(cells, 'translate', dx, dy, opt);
     },
 
     resize: function(width, height, opt) {
@@ -5685,7 +5691,7 @@ joint.dia.Graph = Backbone.Model.extend({
         if (bbox) {
             var sx = Math.max(width / bbox.width, 0);
             var sy = Math.max(height / bbox.height, 0);
-            _.invoke(cells, 'scale', sx, sy, bbox.origin(), opt);
+            _.invokeMap(cells, 'scale', sx, sy, bbox.origin(), opt);
         }
 
         return this;
@@ -5711,7 +5717,7 @@ joint.dia.Graph = Backbone.Model.extend({
         if (name) {
             return this._batches[name];
         } else {
-            return _.any(this._batches, function(batches) { return batches > 0; });
+            return _.some(this._batches, function(batches) { return batches > 0; });
         }
     }
 });
@@ -6193,7 +6199,7 @@ joint.dia.Cell = Backbone.Model.extend({
             parentCell.unembed(this);
         }
 
-        _.invoke(this.getEmbeddedCells(), 'remove', opt);
+        _.invokeMap(this.getEmbeddedCells(), 'remove', opt);
 
         this.trigger('remove', this, this.collection, opt);
 
@@ -6348,7 +6354,7 @@ joint.dia.Cell = Backbone.Model.extend({
 
             } else {
 
-                cells = _.map(this.get('embeds'), this.graph.getCell, this.graph);
+                cells = _.map(this.get('embeds'), _.bind(this.graph.getCell, this.graph));
             }
 
             return cells;
@@ -7464,7 +7470,7 @@ joint.dia.Element = joint.dia.Cell.extend({
         }
 
         // Recursively call `translate()` on all the embeds cells.
-        _.invoke(this.getEmbeddedCells(), 'translate', tx, ty, opt);
+        _.invokeMap(this.getEmbeddedCells(), 'translate', tx, ty, opt);
 
         return this;
     },
@@ -7628,7 +7634,7 @@ joint.dia.Element = joint.dia.Cell.extend({
 
             if (opt.deep) {
                 // Recursively apply fitEmbeds on all embeds first.
-                _.invoke(embeddedCells, 'fitEmbeds', opt);
+                _.invokeMap(embeddedCells, 'fitEmbeds', opt);
             }
 
             // Compute cell's size and position  based on the children bbox
@@ -7924,7 +7930,7 @@ joint.dia.ElementView = joint.dia.CellView.extend({
         // Move to front also all the inbound and outbound links that are connected
         // to any of the element descendant. If we bring to front only embedded elements,
         // links connected to them would stay in the background.
-        _.invoke(connectedLinks, 'set', 'z', maxZ + 1, { ui: true });
+        _.invokeMap(connectedLinks, 'set', 'z', maxZ + 1, { ui: true });
 
         model.stopBatch('to-front');
 
@@ -8013,7 +8019,7 @@ joint.dia.ElementView = joint.dia.CellView.extend({
             delete this._candidateEmbedView;
         }
 
-        _.invoke(paper.model.getConnectedLinks(model, { deep: true }), 'reparent', { ui: true });
+        _.invokeMap(paper.model.getConnectedLinks(model, { deep: true }), 'reparent', { ui: true });
     },
 
     // Interaction. The controller part.
@@ -8517,7 +8523,7 @@ joint.dia.LinkView = joint.dia.CellView.extend({
 
         // Cache all children elements for quicker access.
         this._V = {}; // vectorized markup;
-        _.each(children, function(child) {
+        _.each(children, _.bind(function(child) {
 
             var className = child.attr('class');
 
@@ -8527,7 +8533,7 @@ joint.dia.LinkView = joint.dia.CellView.extend({
                 this._V[$.camelCase(className)] = child;
             }
 
-        }, this);
+        }, this));
 
         // Only the connection path is mandatory
         if (!this._V.connection) throw new Error('link: no connection path in the markup');
@@ -8771,7 +8777,7 @@ joint.dia.LinkView = joint.dia.CellView.extend({
         // cache source and target points
         var sourcePoint, targetPoint, sourceMarkerPoint, targetMarkerPoint;
 
-        var firstVertex = _.first(vertices);
+        var firstVertex = _.head(vertices);
 
         sourcePoint = this.getConnectionPoint(
             'source', this.model.get('source'), firstVertex || this.model.get('target')
@@ -8848,7 +8854,7 @@ joint.dia.LinkView = joint.dia.CellView.extend({
 
             var samples;
 
-            _.each(labels, function(label, idx) {
+            _.each(labels, _.bind(function(label, idx) {
 
                 var position = label.position;
                 var distance = _.isObject(position) ? position.distance : position;
@@ -8906,7 +8912,7 @@ joint.dia.LinkView = joint.dia.CellView.extend({
 
                 this._labelCache[idx].attr('transform', 'translate(' + labelCoordinates.x + ', ' + labelCoordinates.y + ')');
 
-            }, this);
+            }, this));
         }
 
         return this;
@@ -9116,7 +9122,7 @@ joint.dia.LinkView = joint.dia.CellView.extend({
         if (sourceArrow) {
             sourceArrow.translateAndAutoOrient(
                 this.sourcePoint,
-                _.first(this.route) || this.targetPoint,
+                _.head(this.route) || this.targetPoint,
                 this.paper.viewport
             );
         }
@@ -9503,10 +9509,13 @@ joint.dia.LinkView = joint.dia.CellView.extend({
                 magnets.push(view.el);
             }
 
-            var availableMagnets = _.filter(magnets, _.partial(isMagnetAvailable, view), this);
+            var availableMagnets = _.filter(magnets, _.bind(_.partial(isMagnetAvailable, view), this));
             if (availableMagnets.length > 0) {
                 // highlight all available magnets
-                _.each(availableMagnets, _.partial(view.highlight, _, { magnetAvailability: true }), view);
+                _.each(
+                    availableMagnets,
+                    _.bind(_.partial(view.highlight, _, { magnetAvailability: true }), view)
+                );
                 // highlight the entire view
                 view.highlight(null, { elementAvailability: true });
 
@@ -9518,13 +9527,16 @@ joint.dia.LinkView = joint.dia.CellView.extend({
 
     _unmarkAvailableMagnets: function() {
 
-        _.each(this._marked, function(markedMagnets, id) {
+        _.each(this._marked, _.bind(function(markedMagnets, id) {
             var view = this.paper.findViewByModel(id);
             if (view) {
-                _.each(markedMagnets, _.partial(view.unhighlight, _, { magnetAvailability: true }), view);
+                _.each(
+                    markedMagnets,
+                    _.bind(_.partial(view.unhighlight, _, { magnetAvailability: true }), view)
+                );
                 view.unhighlight(null, { elementAvailability: true });
             }
-        }, this);
+        }, this));
 
         this._marked = null;
     },
@@ -9690,7 +9702,7 @@ joint.dia.LinkView = joint.dia.CellView.extend({
                     var minDistance = Number.MAX_VALUE;
                     var pointer = g.point(x, y);
 
-                    _.each(viewsInArea, function(view) {
+                    _.each(viewsInArea, _.bind(function(view) {
 
                         // skip connecting to the element in case '.': { magnet: false } attribute present
                         if (view.el.getAttribute('magnet') !== 'false') {
@@ -9737,7 +9749,7 @@ joint.dia.LinkView = joint.dia.CellView.extend({
 
                         }, this));
 
-                    }, this);
+                    }, this));
 
                     if (this._closestView) {
                         this._closestView.highlight(this._closestEnd.selector, {
@@ -10605,7 +10617,7 @@ joint.dia.Paper = joint.mvc.View.extend({
 
         } else {
 
-            _.each(cells, this.renderView, this);
+            _.each(cells, _.bind(this.renderView, this));
 
             // Sort the cells in the DOM manually as we might have changed the order they
             // were added to the DOM (see above).
@@ -10615,7 +10627,7 @@ joint.dia.Paper = joint.mvc.View.extend({
 
     removeViews: function() {
 
-        _.invoke(this._views, 'remove');
+        _.invokeMap(this._views, 'remove');
 
         this._views = {};
     },
@@ -10629,14 +10641,14 @@ joint.dia.Paper = joint.mvc.View.extend({
             var batchSize = (this.options.async && this.options.async.batchSize) || 50;
             var batchCells = cells.splice(0, batchSize);
 
-            _.each(batchCells, function(cell) {
+            _.each(batchCells, _.bind(function(cell) {
 
                 // The cell has to be part of the graph.
                 // There is a chance in asynchronous rendering
                 // that a cell was removed before it's rendered to the paper.
                 if (cell.graph === this.model) this.renderView(cell);
 
-            }, this);
+            }, this));
 
             this.asyncBatchAdded();
         }
@@ -10795,11 +10807,11 @@ joint.dia.Paper = joint.mvc.View.extend({
 
         p = g.point(p);
 
-        var views = _.map(this.model.getElements(), this.findViewByModel, this);
+        var views = _.map(this.model.getElements(), _.bind(this.findViewByModel, this));
 
-        return _.filter(views, function(view) {
+        return _.filter(views, _.bind(function(view) {
             return view && g.rect(view.vel.bbox(false, this.viewport)).containsPoint(p);
-        }, this);
+        }, this));
     },
 
     // Find all views in given area
@@ -10808,12 +10820,12 @@ joint.dia.Paper = joint.mvc.View.extend({
         opt = _.defaults(opt || {}, { strict: false });
         rect = g.rect(rect);
 
-        var views = _.map(this.model.getElements(), this.findViewByModel, this);
+        var views = _.map(this.model.getElements(), _.bind(this.findViewByModel, this));
         var method = opt.strict ? 'containsRect' : 'intersect';
 
-        return _.filter(views, function(view) {
+        return _.filter(views, _.bind(function(view) {
             return view && rect[method](g.rect(view.vel.bbox(false, this.viewport)));
-        }, this);
+        }, this));
     },
 
     getModelById: function(id) {
@@ -11013,7 +11025,7 @@ joint.dia.Paper = joint.mvc.View.extend({
             // check for built-in types
             var type = _.chain(opt)
                 .pick('embedding', 'connecting', 'magnetAvailability', 'elementAvailability')
-                .keys().first().value();
+                .keys().head().value();
 
             highlighterDef = (type && paperOpt.highlighting[type]) || paperOpt.highlighting['default'];
         }
@@ -11355,9 +11367,9 @@ joint.dia.Paper = joint.mvc.View.extend({
         this._gridSettings = [];
 
         var optionsList = _.isArray(drawGrid) ? drawGrid : [drawGrid || {}];
-        _.each(optionsList, function (item) {
+        _.each(optionsList, _.bind(function (item) {
             this._gridSettings.push.apply(this._gridSettings, this._resolveDrawGridOption(item));
-        }, this);
+        }, this));
         return this;
     },
 
@@ -11568,7 +11580,7 @@ joint.dia.Paper = joint.mvc.View.extend({
 
         this.options.interactive = value;
 
-        _.invoke(this._views, 'setInteractivity', value);
+        _.invokeMap(this._views, 'setInteractivity', value);
     },
 
     // Paper Defs
@@ -11930,7 +11942,7 @@ joint.dia.Paper = joint.mvc.View.extend({
             }
 
             var groupArgs = groupPosition.args || {};
-            var portsArgs = _.pluck(ports, 'position.args');
+            var portsArgs = _.map(ports, 'position.args');
             var groupPortTransformations = namespace[groupPositionName](portsArgs, elBBox, groupArgs);
 
             return _.transform(groupPortTransformations, _.bind(function(result, portTransformation, index) {
@@ -12231,13 +12243,13 @@ joint.dia.Paper = joint.mvc.View.extend({
             portsAttr = portsAttr || {};
             var ports = portsAttr.items || [];
 
-            _.each(ports, function(p) {
+            _.each(ports, _.bind(function(p) {
                 if (!this._isValidPortId(p.id)) {
                     p.id = joint.util.uuid();
                 }
-            }, this);
+            }, this));
 
-            if (_.uniq(ports, 'id').length !== ports.length) {
+            if (_.uniqBy(ports, 'id').length !== ports.length) {
                 errorMessages.push('Element: found id duplicities in ports.');
             }
 
@@ -12306,13 +12318,13 @@ joint.dia.Paper = joint.mvc.View.extend({
 
                 // _.filter can be replaced with _.differenceBy in lodash 4
                 var added = _.filter(curPortData, function(item) {
-                    if (!_.find(prevPortData, 'id', item.id)) {
+                    if (!_.find(prevPortData, _.bind('id', item.id))) {
                         return item;
                     }
                 });
 
                 var removed = _.filter(prevPortData, function(item) {
-                    if (!_.find(curPortData, 'id', item.id)) {
+                    if (!_.find(curPortData, _.bind('id', item.id))) {
                         return item;
                     }
                 });
@@ -12387,18 +12399,18 @@ joint.dia.Paper = joint.mvc.View.extend({
             var withoutZKey = 'auto';
 
             // render non-z first
-            _.each(portsGropsByZ[withoutZKey], function(port) {
+            _.each(portsGropsByZ[withoutZKey], _.bind(function(port) {
                 var portElement = this._getPortElement(port);
                 elem.append(portElement);
                 elementReferences.push(portElement);
-            }, this);
+            }, this));
 
-            _.each(portsGropsByZ, function(groupPorts, groupName) {
+            _.each(portsGropsByZ, _.bind(function(groupPorts, groupName) {
                 if (groupName !== withoutZKey) {
                     var z = parseInt(groupName, 10);
                     this._appendPorts(portsGropsByZ[groupName], z, elementReferences);
                 }
-            }, this);
+            }, this));
 
             this._updatePorts();
         },
@@ -12421,7 +12433,7 @@ joint.dia.Paper = joint.mvc.View.extend({
         _appendPorts: function(ports, z, refs) {
 
             var containerElement = this._getContainerElement();
-            var portElements = _.map(ports, this._getPortElement, this);
+            var portElements = _.map(ports, _.bind(this._getPortElement, this));
 
             if (refs[z] || z < 0) {
                 V(refs[Math.max(z, 0)]).before(portElements);
@@ -12453,14 +12465,14 @@ joint.dia.Paper = joint.mvc.View.extend({
             this._updatePortGroup(undefined);
             // layout ports with explicit group
             var groupsNames = _.keys(this.model._portSettingsData.groups);
-            _.each(groupsNames, this._updatePortGroup, this);
+            _.each(groupsNames, _.bind(this._updatePortGroup, this));
         },
 
         /**
          * @private
          */
         _removePorts: function() {
-            _.invoke(this._portElementsCache, 'portElement.remove');
+            _.invokeMap(this._portElementsCache, 'portElement.remove');
         },
 
         /**

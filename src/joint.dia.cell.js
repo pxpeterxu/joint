@@ -161,7 +161,7 @@ joint.dia.Cell = Backbone.Model.extend({
             parentCell.unembed(this);
         }
 
-        _.invoke(this.getEmbeddedCells(), 'remove', opt);
+        _.invokeMap(this.getEmbeddedCells(), 'remove', opt);
 
         this.trigger('remove', this, this.collection, opt);
 
@@ -316,7 +316,7 @@ joint.dia.Cell = Backbone.Model.extend({
 
             } else {
 
-                cells = _.map(this.get('embeds'), this.graph.getCell, this.graph);
+                cells = _.map(this.get('embeds'), _.bind(this.graph.getCell, this.graph));
             }
 
             return cells;

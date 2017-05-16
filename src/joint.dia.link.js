@@ -376,7 +376,7 @@ joint.dia.LinkView = joint.dia.CellView.extend({
 
         // Cache all children elements for quicker access.
         this._V = {}; // vectorized markup;
-        _.each(children, function(child) {
+        _.each(children, _.bind(function(child) {
 
             var className = child.attr('class');
 
@@ -386,7 +386,7 @@ joint.dia.LinkView = joint.dia.CellView.extend({
                 this._V[$.camelCase(className)] = child;
             }
 
-        }, this);
+        }, this));
 
         // Only the connection path is mandatory
         if (!this._V.connection) throw new Error('link: no connection path in the markup');
@@ -630,7 +630,7 @@ joint.dia.LinkView = joint.dia.CellView.extend({
         // cache source and target points
         var sourcePoint, targetPoint, sourceMarkerPoint, targetMarkerPoint;
 
-        var firstVertex = _.first(vertices);
+        var firstVertex = _.head(vertices);
 
         sourcePoint = this.getConnectionPoint(
             'source', this.model.get('source'), firstVertex || this.model.get('target')
@@ -707,7 +707,7 @@ joint.dia.LinkView = joint.dia.CellView.extend({
 
             var samples;
 
-            _.each(labels, function(label, idx) {
+            _.each(labels, _.bind(function(label, idx) {
 
                 var position = label.position;
                 var distance = _.isObject(position) ? position.distance : position;
@@ -765,7 +765,7 @@ joint.dia.LinkView = joint.dia.CellView.extend({
 
                 this._labelCache[idx].attr('transform', 'translate(' + labelCoordinates.x + ', ' + labelCoordinates.y + ')');
 
-            }, this);
+            }, this));
         }
 
         return this;
@@ -975,7 +975,7 @@ joint.dia.LinkView = joint.dia.CellView.extend({
         if (sourceArrow) {
             sourceArrow.translateAndAutoOrient(
                 this.sourcePoint,
-                _.first(this.route) || this.targetPoint,
+                _.head(this.route) || this.targetPoint,
                 this.paper.viewport
             );
         }
@@ -1362,10 +1362,13 @@ joint.dia.LinkView = joint.dia.CellView.extend({
                 magnets.push(view.el);
             }
 
-            var availableMagnets = _.filter(magnets, _.partial(isMagnetAvailable, view), this);
+            var availableMagnets = _.filter(magnets, _.bind(_.partial(isMagnetAvailable, view), this));
             if (availableMagnets.length > 0) {
                 // highlight all available magnets
-                _.each(availableMagnets, _.partial(view.highlight, _, { magnetAvailability: true }), view);
+                _.each(
+                    availableMagnets,
+                    _.bind(_.partial(view.highlight, _, { magnetAvailability: true }), view)
+                );
                 // highlight the entire view
                 view.highlight(null, { elementAvailability: true });
 
@@ -1377,13 +1380,16 @@ joint.dia.LinkView = joint.dia.CellView.extend({
 
     _unmarkAvailableMagnets: function() {
 
-        _.each(this._marked, function(markedMagnets, id) {
+        _.each(this._marked, _.bind(function(markedMagnets, id) {
             var view = this.paper.findViewByModel(id);
             if (view) {
-                _.each(markedMagnets, _.partial(view.unhighlight, _, { magnetAvailability: true }), view);
+                _.each(
+                    markedMagnets,
+                    _.bind(_.partial(view.unhighlight, _, { magnetAvailability: true }), view)
+                );
                 view.unhighlight(null, { elementAvailability: true });
             }
-        }, this);
+        }, this));
 
         this._marked = null;
     },
@@ -1549,7 +1555,7 @@ joint.dia.LinkView = joint.dia.CellView.extend({
                     var minDistance = Number.MAX_VALUE;
                     var pointer = g.point(x, y);
 
-                    _.each(viewsInArea, function(view) {
+                    _.each(viewsInArea, _.bind(function(view) {
 
                         // skip connecting to the element in case '.': { magnet: false } attribute present
                         if (view.el.getAttribute('magnet') !== 'false') {
@@ -1596,7 +1602,7 @@ joint.dia.LinkView = joint.dia.CellView.extend({
 
                         }, this));
 
-                    }, this);
+                    }, this));
 
                     if (this._closestView) {
                         this._closestView.highlight(this._closestEnd.selector, {
